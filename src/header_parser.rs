@@ -19,8 +19,6 @@ pub struct ParsedHeaders {
     pub seq: Option<i64>,
 }
 
-
-
 impl ParsedHeaders {
     pub fn init() -> ParsedHeaders {
         return ParsedHeaders {
