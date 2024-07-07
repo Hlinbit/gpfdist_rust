@@ -8,6 +8,8 @@ pub enum RequestError {
     JsonSerializationError(#[from] serde_json::Error),
     #[error("Invalid sequence number")]
     InvalidSequenceNumber,
+    #[error("Invalid request type {0}")]
+    InvalidRequestType(String),
 }
 
 pub fn error_response(err: &RequestError) -> Response<Body>{
@@ -23,6 +25,10 @@ pub fn error_response(err: &RequestError) -> Response<Body>{
         RequestError::JsonSerializationError(_) => Response::builder()
             .status(500)
             .body(Body::from("Internal server error: Failed to serialize JSON response"))
+            .unwrap(),
+        RequestError::InvalidRequestType(_) => Response::builder()
+            .status(404)
+            .body(Body::from(err.to_string()))
             .unwrap(),
     }
 }

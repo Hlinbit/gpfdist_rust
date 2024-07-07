@@ -2,13 +2,14 @@ mod header_parser;
 mod error;
 mod flag_parser;
 mod file_stream;
+mod handler;
 
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response, Server};
+use hyper::{Body, Request, Response, Server, Method};
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::process::exit;
-use header_parser::ParsedHeaders;
+use handler::{get_hander, post_hander};
 use error::{error_response, RequestError};
 use flag_parser::{parse_flags, Opt};
 use once_cell::sync::Lazy;
@@ -33,15 +34,12 @@ async fn handle_request(req: Request<Body>) -> Result<Response<Body>, Infallible
 }
 
 async fn process_request(req: Request<Body>) -> Result<Response<Body>, RequestError> {
-    let mut parsed_headers = ParsedHeaders::init();
-    parsed_headers.parse(req)?;
-    let json_response: String = serde_json::to_string(&parsed_headers)
-    .map_err(RequestError::JsonSerializationError)?;
-
-    Ok(Response::builder()
-        .header("Content-Type", "application/json")
-        .body(Body::from(json_response))
-        .unwrap())
+    let method = req.method().clone();
+    match method {
+        Method::GET => {get_hander(req)},
+        Method::POST => {post_hander(req)},
+        _ => {Err(RequestError::InvalidRequestType(method.to_string()))},
+    }
 }
 
 #[tokio::main]
