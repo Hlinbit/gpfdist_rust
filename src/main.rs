@@ -3,6 +3,7 @@ mod error;
 mod flag_parser;
 mod file_stream;
 mod handler;
+mod protocal;
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, Method};
