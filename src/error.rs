@@ -10,6 +10,8 @@ pub enum RequestError {
     InvalidSequenceNumber,
     #[error("Invalid request type {0}")]
     InvalidRequestType(String),
+    #[error("Internal error: {0}")]
+    InternalErrorType(String),
 }
 
 pub fn error_response(err: &RequestError) -> Response<Body>{
@@ -27,6 +29,10 @@ pub fn error_response(err: &RequestError) -> Response<Body>{
             .body(Body::from("Internal server error: Failed to serialize JSON response"))
             .unwrap(),
         RequestError::InvalidRequestType(_) => Response::builder()
+            .status(404)
+            .body(Body::from(err.to_string()))
+            .unwrap(),
+        RequestError::InternalErrorType(_) => Response::builder()
             .status(404)
             .body(Body::from(err.to_string()))
             .unwrap(),

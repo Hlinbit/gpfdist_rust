@@ -1,4 +1,4 @@
-mod header_parser;
+mod http_parser;
 mod error;
 mod flag_parser;
 mod file_stream;

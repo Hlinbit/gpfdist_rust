@@ -46,15 +46,15 @@ pub struct Opt {
 
     /// Timeout in seconds
     #[structopt(short = "t", long)]
-    pub timeout: Option<u64>,
+    pub timeout: Option<usize>,
 
     /// Internal - gp_proto number
     #[structopt(short = "g", long)]
-    pub gp_proto: Option<u64>,
+    pub gp_proto: Option<usize>,
 
     /// Max data row length expected
     #[structopt(short = "m", long)]
-    pub max_data_row_length: Option<u64>,
+    pub max_data_row_length: Option<usize>,
 
     /// Use O_SYNC when opening files for write
     #[structopt(short = "S", long)]
@@ -62,7 +62,7 @@ pub struct Opt {
 
     /// Internal - queue size for listen call
     #[structopt(short = "z", long)]
-    pub listen_queue_size: Option<u64>,
+    pub listen_queue_size: Option<usize>,
 
     /// SSL - certificates files under this directory
     #[structopt(long = "ssl")]
@@ -78,7 +78,7 @@ pub struct Opt {
 
     /// Wait for session timeout in seconds
     #[structopt(short = "w", long)]
-    pub wait_timeout: Option<u64>,
+    pub wait_timeout: Option<usize>,
 
     /// Turn on compressed transmission
     #[structopt(long = "compress")]
@@ -90,9 +90,73 @@ pub struct Opt {
 
     /// Timeout to clean up sessions in seconds
     #[structopt(short = "k", long)]
-    pub cleanup_timeout: Option<u64>,
+    pub cleanup_timeout: Option<usize>,
+}
+
+impl Default for Opt {
+    fn default() -> Self {
+        Opt {
+            help: false,
+            verbose: false,
+            verbose_mode: false,
+            simplified_log: false,
+            port: Some(8090),
+            last_port: None,
+            directory: Some(std::env::current_dir().expect("Failed to get current directory")),
+            force_file_name: false,
+            bind_ip4: false,
+            log_file: None,
+            timeout:  Some(5 * 60),
+            gp_proto: None,
+            max_data_row_length: Some(1024 * 64),
+            use_o_sync: false,
+            listen_queue_size: Some(1024),
+            ssl_cert_dir: None,
+            ssl_verify_peer: None,
+            version: false,
+            wait_timeout: Some(5 * 60),
+            compress: false,
+            multi_thread: Some(8),
+            cleanup_timeout: Some(5 * 60),
+        }
+    }
 }
 
 pub fn parse_flags() -> Result<Opt, String> {
-    Opt::from_args_safe().map_err(|e| e.to_string())
+    // 使用默认值创建 Opt 结构体
+    let default_opt = Opt::default();
+    println!("Default Opt: {:?}", default_opt);
+
+    // 使用命令行参数创建 Opt 结构体，如果没有提供参数则使用默认值
+    let mut opt = Opt::from_args_safe().map_err(|e| e.to_string())?;
+    // 提供默认值
+    if opt.port.is_none() {
+        opt.port = Some(8080);
+    }
+    if opt.directory.is_none() {
+        opt.directory = Some(std::env::current_dir().expect("Failed to get current directory"));
+    }
+    if opt.timeout.is_none() {
+        opt.timeout = Some(5 * 60);
+    }
+    if opt.max_data_row_length.is_none() {
+        opt.max_data_row_length = Some(1024 * 64);
+    }
+    if opt.listen_queue_size.is_none() {
+        opt.listen_queue_size = Some(128);
+    }
+    if opt.ssl_verify_peer.is_none() {
+        opt.ssl_verify_peer = Some(false);
+    }
+    if opt.wait_timeout.is_none() {
+        opt.wait_timeout = Some(60 * 5);
+    }
+    if opt.multi_thread.is_none() {
+        opt.multi_thread = Some(8);
+    }
+    if opt.cleanup_timeout.is_none() {
+        opt.cleanup_timeout = Some(300);
+    }
+    println!("Opt from args: {:?}", opt);
+    return Ok(opt);
 }

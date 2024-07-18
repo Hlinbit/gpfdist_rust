@@ -3,7 +3,7 @@ use hyper::{Body, Request};
 use crate::error::RequestError;
 
 #[derive(Serialize)]
-pub struct ParsedHeaders {
+pub struct GpfdistHeader {
     pub xid: Option<String>,
     pub cid: Option<String>,
     pub sn: Option<String>,
@@ -19,26 +19,26 @@ pub struct ParsedHeaders {
     pub seq: Option<i64>,
 }
 
-impl ParsedHeaders {
-    pub fn init() -> ParsedHeaders {
-        return ParsedHeaders {
-            xid: None,
-            cid: None,
-            sn: None,
-            csvopt: None,
-            gp_proto: None,
-            is_final: false,
-            totalsegs: None,
-            segid: None,
-            zstd: None,
-            line_delim_str: None,
-            line_delim_length: None,
-            trans_name: None,
-            seq: None,
-        };
-    }
+pub fn header_init() -> GpfdistHeader {
+    return GpfdistHeader {
+        xid: None,
+        cid: None,
+        sn: None,
+        csvopt: None,
+        gp_proto: None,
+        is_final: false,
+        totalsegs: None,
+        segid: None,
+        zstd: None,
+        line_delim_str: None,
+        line_delim_length: None,
+        trans_name: None,
+        seq: None,
+    };
+}
 
-    pub fn parse(&mut self ,req: Request<Body>) -> Result<bool, RequestError> {
+impl GpfdistHeader {
+    pub fn parse(&mut self ,req: &Request<Body>) -> Result<bool, RequestError> {
         for (name, value) in req.headers() {
             let value_str = value.to_str().map_err(|_| RequestError::InvalidHeaderValue(name.to_string()))?;
             match name.as_str() {

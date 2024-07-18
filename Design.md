@@ -13,6 +13,16 @@
 
 - What is gpfdist header? What value should be added into response header?
 
+# Blog Topic
+## Error handling
+Some(std::env::current_dir().expect("Failed to get current directory"))
+behavior of function `unwrap()`
+How to map error
+The behavior of `?`
+
+## tokio
+## HTTP Struct
+## String Vs &str
 
 # Done
 
