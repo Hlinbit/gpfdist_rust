@@ -4,6 +4,7 @@ mod flag_parser;
 mod file_stream;
 mod handler;
 mod protocal;
+mod session;
 
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response, Server, Method};
@@ -14,7 +15,9 @@ use handler::{get_hander, post_hander};
 use error::{error_response, RequestError};
 use flag_parser::{parse_flags, Opt};
 use once_cell::sync::Lazy;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use session::Session;
+use std::collections::HashMap;
 
 static GLOBAL_CONFIG: Lazy<Arc<Opt>> = Lazy::new(|| {
     match parse_flags(){
@@ -25,6 +28,11 @@ static GLOBAL_CONFIG: Lazy<Arc<Opt>> = Lazy::new(|| {
         }
     }
 });
+
+static GLOBAL_SESSION_HUB: Lazy<Mutex<HashMap<String, Arc<Session>>>> = Lazy::new(|| {
+    Mutex::new(HashMap::new())
+});
+
 
 async fn handle_request(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     let result: Result<Response<Body>, RequestError> = process_request(req).await;
