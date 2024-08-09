@@ -1,16 +1,19 @@
+use std::borrow::BorrowMut;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
-use crate::handler::GpfdistRequest;
+use std::sync::{Arc, Mutex};
+use crate::session::Session;
 use crate::protocal::block_fill_header;
 
 pub fn read_file_lines(
     n_byte: usize,
     line_delimiter: &str,
     file_path: &Path,
-    offset: u64,
+    s:  &mut Arc<Mutex<Session>>,
     buf: &mut Vec<u8>,
 ) -> Result<usize, std::io::Error> {
+    let offset = s.lock().unwrap().offset;
     let mut file = File::open(file_path)?;
     file.seek(SeekFrom::Start(offset))?;
 
@@ -42,6 +45,7 @@ pub fn read_file_lines(
         let gpfdist_header = fill_gpfdist_header(offset, file_path.to_str().unwrap(), 0, content_length as u64);
         let head_length = gpfdist_header.len();
         total_length = content_length + head_length;
+        s.lock().unwrap().offset += content_length as u64;
         buf[start..head_length].copy_from_slice(&gpfdist_header[0..head_length]);
         buf[head_length..total_length].copy_from_slice(&chunk[0..content_length]);
         buf.truncate(total_length);

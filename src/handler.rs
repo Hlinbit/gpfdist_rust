@@ -1,7 +1,8 @@
 
 use crate::http_parser::{GpfdistHeader, header_init};
 use crate::session::Session;
-use std::sync::Arc;
+use std::borrow::BorrowMut;
+use std::sync::{Arc,Mutex};
 use std::vec::Vec;
 use std::path::Path;
 use hyper::{Body, Request, Response};
@@ -31,22 +32,27 @@ impl GpfdistRequest {
         let tid = format!("{}:{}:{}:{}", cid, xid, sn, gp_proto);
         return Ok(GpfdistRequest{
             http: header,
-            buf: Vec::with_capacity(GLOBAL_CONFIG.max_data_row_length.unwrap_or(1024 * 64 as usize)),
+            buf: vec![0u8; GLOBAL_CONFIG.max_data_row_length.unwrap_or(64 * 1024) + 1024],
             file_name: String::from(file_path.to_str().ok_or("Path that cannot be converted to String.").map_err(|err| RequestError::InternalErrorType(err.to_string()))?),
             tid: tid,
         })
     }
 }
 
-fn session_attach(request: &GpfdistRequest) {
-    let session_t = Arc::new(Session{
-        offset: 0u64,
-        file_path: request.file_name.clone(),
-        key: request.tid.clone(),
-    });
-    {
-        let mut map = GLOBAL_SESSION_HUB.lock().unwrap();
-        map.insert(session_t.key.clone(), session_t);
+fn session_attach(request: &GpfdistRequest) -> Arc<Mutex<Session>> {
+    let key = request.tid.as_str();
+    let mut map = GLOBAL_SESSION_HUB.lock().unwrap();
+
+    if let Some(s) = map.get(key) {
+        return s.clone();
+    } else {
+        let session_t = Arc::new(Mutex::new(Session{
+            offset: 0u64,
+            file_path: request.file_name.clone(),
+            key: request.tid.clone(),
+        }));
+        map.insert(session_t.lock().unwrap().key.clone(), session_t.clone());
+        return session_t.clone();
     }
 }
 
@@ -55,8 +61,8 @@ pub fn get_hander (req: Request<Body>) -> Result<Response<Body>, RequestError> {
     
     let n_byte = GLOBAL_CONFIG.max_data_row_length.unwrap() as usize;
     let file_path = Path::new(request.file_name.as_str());
-    session_attach(&request);
-    let content_length = read_file_lines(n_byte, "\n", file_path, 0, &mut request.buf).
+    let mut s = session_attach(&request);
+    let content_length = read_file_lines(n_byte, "\n", file_path, s.borrow_mut(), &mut request.buf).
             map_err(|err| RequestError::InternalErrorType(err.to_string()))?;
     if content_length == 0 {
         return Err(RequestError::InternalErrorType(String::from("Max line length is not enough to contain a line.")));

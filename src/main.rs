@@ -29,7 +29,7 @@ static GLOBAL_CONFIG: Lazy<Arc<Opt>> = Lazy::new(|| {
     }
 });
 
-static GLOBAL_SESSION_HUB: Lazy<Mutex<HashMap<String, Arc<Session>>>> = Lazy::new(|| {
+static GLOBAL_SESSION_HUB: Lazy<Mutex<HashMap<String, Arc<Mutex<Session>>>>> = Lazy::new(|| {
     Mutex::new(HashMap::new())
 });
 
